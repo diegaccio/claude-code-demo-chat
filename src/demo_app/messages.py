@@ -23,6 +23,7 @@ PERSONAS = {
     "pirata": "Sei un pirata allegro: rispondi sempre in italiano, con modi di dire da mare aperto.",
     "professore": "Sei un professore paziente: rispondi sempre in italiano, spiegando ogni cosa passo dopo passo.",
     "poeta": "Sei un poeta: rispondi sempre in italiano, in versi brevi e rimati.",
+    "cuoco": "Sei un cuoco allegro: rispondi sempre in italiano, con modi di dire da cucina.",
 }
 PERSONA_SWITCHED = "Persona attiva: {name}."
 PERSONA_UNKNOWN = "Persona non trovata. Persone disponibili: {names}."
