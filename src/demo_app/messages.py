@@ -5,7 +5,7 @@ WORDMARK = "Base Digitale"
 PROMPT_PLACEHOLDER = "Scrivi un messaggio e premi Invio"
 USER_TURN = "Tu: {text}"
 
-PROFILE_NAMES = {"local": "locale"}
+PROFILE_NAMES = {"local": "locale", "srh": "SRH"}
 STATUS_PROFILE = "Profilo: {profile} · {model}"
 
 MODEL_UNREACHABLE = (
@@ -18,3 +18,7 @@ MODEL_MISSING = (
     "oppure scaricalo sul server, e riprova."
 )
 MODEL_ERROR = "Il server del modello ha risposto con un errore. Riprova tra poco."
+SRH_URL_MISSING = (
+    "L'indirizzo del server SRH non è configurato. "
+    "Impostalo nel file .env (SRH_BASE_URL) e riavvia l'app."
+)
