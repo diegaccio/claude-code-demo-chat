@@ -80,8 +80,18 @@ class DemoApp(App[None]):
         if not text:
             return
         event.input.clear()
-        event.input.disabled = True
         conversation = self.query_one("#conversation", VerticalScroll)
+        if text == "/persona" or text.startswith("/persona "):
+            try:
+                notice = self._chat.use_persona(text.removeprefix("/persona").strip())
+                classes = "turn answer"
+            except ChatError as error:
+                notice = str(error)
+                classes = "turn error"
+            await conversation.mount(Static(notice, markup=False, classes=classes))
+            conversation.scroll_end(animate=False)
+            return
+        event.input.disabled = True
         await conversation.mount(
             Static(
                 messages.USER_TURN.format(text=text),

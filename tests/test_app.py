@@ -76,3 +76,38 @@ async def test_model_error_appears_in_the_chat_and_the_app_keeps_running() -> No
 
         turns = [str(w.render()) for w in app.query(".turn").results(Static)]
         assert turns[-1] == "Eccomi."
+
+
+async def test_persona_command_confirms_in_the_chat_and_steers_the_next_turn() -> None:
+    client = FakeModelClient(["Arr!"])
+    app = demo_app(client)
+    async with app.run_test() as pilot:
+        await pilot.click("#prompt")
+        await pilot.press(*"/persona pirata", "enter")
+        await pilot.pause()
+        assert text_of(app, ".answer") == messages.PERSONA_SWITCHED.format(
+            name="pirata"
+        )
+
+        await pilot.press(*"Ciao", "enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        assert client.requests[0][1][0] == {
+            "role": "system",
+            "content": messages.PERSONAS["pirata"],
+        }
+
+
+async def test_persona_command_with_unknown_name_lists_the_available_ones() -> None:
+    client = FakeModelClient()
+    app = demo_app(client)
+    async with app.run_test() as pilot:
+        await pilot.click("#prompt")
+        await pilot.press(*"/persona xyz", "enter")
+        await pilot.pause()
+
+        assert text_of(app, ".error") == messages.PERSONA_UNKNOWN.format(
+            names=", ".join(messages.PERSONAS)
+        )
+        assert client.requests == []
