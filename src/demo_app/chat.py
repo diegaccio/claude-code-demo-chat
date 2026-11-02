@@ -45,4 +45,6 @@ class Chat:
                 yield chunk
         except openai.APIConnectionError as error:
             raise ChatError(messages.MODEL_UNREACHABLE) from error
+        except openai.NotFoundError as error:
+            raise ChatError(messages.MODEL_MISSING.format(model=self._model)) from error
         self._messages.append({"role": "assistant", "content": "".join(answer)})
