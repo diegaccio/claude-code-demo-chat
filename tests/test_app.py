@@ -102,6 +102,27 @@ async def test_persona_command_confirms_in_the_chat_and_steers_the_next_turn() -
         }
 
 
+async def test_cuoco_persona_confirms_in_the_chat_and_steers_the_next_turn() -> None:
+    client = FakeModelClient(["Buon appetito!"])
+    app = demo_app(client)
+    async with app.run_test() as pilot:
+        await pilot.click("#prompt")
+        await pilot.press(*"/persona cuoco", "enter")
+        await pilot.pause()
+        assert text_of(app, ".answer") == messages.PERSONA_SWITCHED.format(
+            name="cuoco"
+        )
+
+        await pilot.press(*"Ciao", "enter")
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+
+        assert client.requests[0][1][0] == {
+            "role": "system",
+            "content": messages.PERSONAS["cuoco"],
+        }
+
+
 async def test_persona_command_with_unknown_name_lists_the_available_ones() -> None:
     client = FakeModelClient()
     app = demo_app(client)
