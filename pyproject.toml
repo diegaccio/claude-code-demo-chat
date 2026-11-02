@@ -6,7 +6,11 @@ authors = [
     { name = "Diego Cattaneo", email = "diego.cattaneo@basedigitale.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "openai>=3.42.1",
+    "pydantic-settings>=2.16.2",
+    "textual>=8.2.8",
+]
 
 [project.scripts]
 demo-app = "demo_app:main"

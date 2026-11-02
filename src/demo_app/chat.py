@@ -1,0 +1,170 @@
+"""The chat seam: holds the conversation and talks to the model."""
+
+import json
+import re
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal, Protocol, TypedDict, cast
+
+import openai
+
+from demo_app import messages
+
+_NAME = re.compile(r"[\w-]+")
+
+
+Role = Literal["system", "user", "assistant"]
+_ROLES = ("system", "user", "assistant")
+
+
+class Message(TypedDict):
+    """One message of the conversation, as sent to the model."""
+
+    role: Role
+    content: str
+
+
+@dataclass(frozen=True)
+class Turn:
+    """A question and the answer it got, as the UI shows them."""
+
+    question: str
+    answer: str
+
+
+class ModelClient(Protocol):
+    """Streams a reply from an OpenAI-compatible model server."""
+
+    def stream(
+        self, *, model: str, messages: Sequence[Message]
+    ) -> AsyncIterator[str]:
+        """Yield the reply to `messages` as non-empty text chunks, in order."""
+        ...
+
+
+class ChatError(Exception):
+    """A failed turn; its text is ready to show the user."""
+
+
+class Chat:
+    """A conversation with one model, through a model client."""
+
+    def __init__(
+        self,
+        client: ModelClient,
+        *,
+        model: str,
+        conversations: Path = Path("conversations"),
+    ) -> None:
+        self._client = client
+        self._model = model
+        self._conversations = conversations
+        self._messages: list[Message] = []
+        self._persona: str | None = None
+
+    def use_persona(self, name: str) -> str:
+        """Switch the system prompt to the named Persona; return the confirmation.
+
+        An empty or unknown name raises ChatError listing the available ones.
+        """
+        names = ", ".join(messages.PERSONAS)
+        if not name:
+            raise ChatError(messages.PERSONA_USAGE.format(names=names))
+        if name not in messages.PERSONAS:
+            raise ChatError(messages.PERSONA_UNKNOWN.format(names=names))
+        self._persona = name
+        return messages.PERSONA_SWITCHED.format(name=name)
+
+    async def send(self, text: str) -> AsyncIterator[str]:
+        """Stream the model's answer to the user's text, chunk by chunk.
+
+        The turn joins the conversation only once the answer is complete: a
+        failed turn raises ChatError and leaves the conversation as it was.
+        """
+        question: Message = {"role": "user", "content": text}
+        answer: list[str] = []
+        system: list[Message] = (
+            [{"role": "system", "content": messages.PERSONAS[self._persona]}]
+            if self._persona
+            else []
+        )
+        try:
+            async for chunk in self._client.stream(
+                model=self._model, messages=[*system, *self._messages, question]
+            ):
+                answer.append(chunk)
+                yield chunk
+        except openai.APIConnectionError as error:
+            raise ChatError(messages.MODEL_UNREACHABLE) from error
+        except openai.NotFoundError as error:
+            raise ChatError(messages.MODEL_MISSING.format(model=self._model)) from error
+        except openai.APIError as error:
+            raise ChatError(messages.MODEL_ERROR) from error
+        self._messages += [question, {"role": "assistant", "content": "".join(answer)}]
+
+    def save(self, name: str) -> None:
+        """Write the conversation to `<name>.json` in the conversations folder."""
+        path = self._path(name)
+        self._conversations.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(self._messages, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+    def load(self, name: str) -> list[Turn]:
+        """Replace the conversation with the saved one, and return its turns.
+
+        A missing or corrupt file raises ChatError and leaves the conversation
+        as it was.
+        """
+        path = self._path(name)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError as error:
+            raise ChatError(messages.CONVERSATION_MISSING.format(name=name)) from error
+        except (OSError, ValueError) as error:
+            raise ChatError(messages.CONVERSATION_CORRUPT.format(name=name)) from error
+        loaded = _parse(data)
+        if loaded is None:
+            raise ChatError(messages.CONVERSATION_CORRUPT.format(name=name))
+        self._messages = loaded
+        return _turns(loaded)
+
+    def _path(self, name: str) -> Path:
+        if not _NAME.fullmatch(name):
+            raise ChatError(messages.CONVERSATION_NAME_INVALID)
+        return self._conversations / f"{name}.json"
+
+
+def _turns(history: list[Message]) -> list[Turn]:
+    """The question and answer pairs of a history; a system prompt is no turn."""
+    turns: list[Turn] = []
+    question: str | None = None
+    for message in history:
+        if message["role"] == "user":
+            if question is not None:
+                turns.append(Turn(question, ""))
+            question = message["content"]
+        elif message["role"] == "assistant" and question is not None:
+            turns.append(Turn(question, message["content"]))
+            question = None
+    if question is not None:
+        turns.append(Turn(question, ""))
+    return turns
+
+
+def _parse(data: object) -> list[Message] | None:
+    """The messages of a saved conversation, or None when it is not one."""
+    if not isinstance(data, list):
+        return None
+    parsed: list[Message] = []
+    for item in cast(list[object], data):
+        if not isinstance(item, dict):
+            return None
+        fields = cast(dict[str, object], item)
+        role, content = fields.get("role"), fields.get("content")
+        if role in _ROLES and isinstance(content, str):
+            parsed.append({"role": cast(Role, role), "content": content})
+            continue
+        return None
+    return parsed
