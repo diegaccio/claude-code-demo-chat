@@ -19,7 +19,7 @@ Placeholders: `<branch>` the source branch, `<target>` the target branch, `<mr>`
 - **Target branch:** `main`
 - **Title convention:** the Task's title, prefixed with `#<id>` (for example `#12 Add login endpoint`)
 - **Draft use:** open as draft while work continues; mark ready when the Validation steps are green
-- **Required checks:** none yet (no CI workflow): run the Validation steps locally before marking the pull request ready; list the CI workflows here once one exists
+- **Required checks:** the `Validation` workflow (`.github/workflows/validation.yml`), which runs the Validation steps on every push; it must be green before the pull request is marked ready
 - **Labels:** none
 - **Reviewer choice:** one primary software engineer for the touched component from the team map; never the author. When no one matches, leave reviewers unset and flag the choice to the user
 

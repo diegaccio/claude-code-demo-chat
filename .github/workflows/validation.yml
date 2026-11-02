@@ -1,0 +1,27 @@
+# Runs the Validation steps of docs/agents/validation.md on every push.
+name: Validation
+
+on:
+  push:
+
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.7"
+
+      - name: prepare
+        run: uv sync --locked
+
+      - name: build
+        run: uv run pyright
+
+      - name: lint
+        run: uv run ruff check
+
+      - name: test
+        run: uv run pytest
