@@ -9,7 +9,7 @@ import openai
 import pytest
 
 from demo_app import messages
-from demo_app.chat import Chat, ChatError
+from demo_app.chat import Chat, ChatError, Turn
 from tests.fakes import REQUEST, FakeModelClient
 
 
@@ -151,10 +151,7 @@ async def test_saved_conversation_loads_back_and_the_chat_continues(
     ]
 
     other = Chat(client, model="ministral-3:3b", conversations=tmp_path)
-    assert other.load("lunedi") == [
-        {"role": "user", "content": "Come stai?"},
-        {"role": "assistant", "content": "Bene."},
-    ]
+    assert other.load("lunedi") == [Turn("Come stai?", "Bene.")]
     await collect(other.send("E ora?"))
 
     assert client.requests[-1][1] == [

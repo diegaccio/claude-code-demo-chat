@@ -5,7 +5,7 @@ from textual.containers import VerticalScroll
 from textual.widgets import Input, Static
 
 from demo_app import messages
-from demo_app.chat import Chat, ChatError, Message
+from demo_app.chat import Chat, ChatError, Turn
 from demo_app.settings import ModelProfile
 from demo_app.theme import NOTTE
 
@@ -117,22 +117,19 @@ class DemoApp(App[None]):
                 self._chat.save(name)
                 await self._show(messages.CONVERSATION_SAVED.format(name=name), "turn")
             else:
-                loaded = self._chat.load(name)
-                await self._replay(loaded)
+                turns = self._chat.load(name)
+                await self._replay(turns)
                 await self._show(messages.CONVERSATION_LOADED.format(name=name), "turn")
         except ChatError as error:
             await self._show(str(error), "turn error")
 
-    async def _replay(self, loaded: list[Message]) -> None:
+    async def _replay(self, turns: list[Turn]) -> None:
         conversation = self.query_one("#conversation", VerticalScroll)
         await conversation.remove_children()
-        for message in loaded:
-            if message["role"] == "user":
-                await self._show(
-                    messages.USER_TURN.format(text=message["content"]), "turn user"
-                )
-            elif message["role"] == "assistant":
-                await self._show(message["content"], "turn answer")
+        for turn in turns:
+            await self._show(messages.USER_TURN.format(text=turn.question), "turn user")
+            if turn.answer:
+                await self._show(turn.answer, "turn answer")
 
     async def _show(self, text: str, classes: str) -> None:
         conversation = self.query_one("#conversation", VerticalScroll)

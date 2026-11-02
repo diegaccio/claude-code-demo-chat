@@ -1,3 +1,5 @@
+"""The Demo app: wires the settings, the chat and the terminal UI."""
+
 from demo_app.app import DemoApp
 from demo_app.chat import Chat
 from demo_app.openai_client import client_for

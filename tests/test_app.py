@@ -177,3 +177,15 @@ async def test_a_command_without_a_name_explains_its_usage(tmp_path: Path) -> No
         await type_command(app, pilot, "/save")
 
         assert turns_of(app) == [messages.CONVERSATION_NAME_USAGE]
+
+
+async def test_status_bar_names_the_srh_profile_never_its_url() -> None:
+    profile = ModelProfile(
+        name="srh", base_url="http://srh.example.test/v1", model="qwen3.6-35b-a3b"
+    )
+    app = DemoApp(Chat(FakeModelClient(), model=profile.model), profile)
+    async with app.run_test():
+        status = str(app.query_one("#status-bar", Static).render())
+
+    assert status == "Profilo: SRH · qwen3.6-35b-a3b"
+    assert "srh.example.test" not in status
