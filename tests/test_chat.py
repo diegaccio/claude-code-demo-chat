@@ -90,3 +90,46 @@ async def test_any_other_server_error_raises_a_readable_error() -> None:
         await collect(chat.send("Ciao!"))
 
     assert str(raised.value) == messages.MODEL_ERROR
+
+
+async def test_persona_switch_changes_the_system_prompt_sent() -> None:
+    client = FakeModelClient(["Ok"])
+    chat = Chat(client, model="ministral-3:3b")
+
+    confirmation = chat.use_persona("pirata")
+    await collect(chat.send("Ciao!"))
+    chat.use_persona("poeta")
+    await collect(chat.send("E ora?"))
+
+    assert confirmation == messages.PERSONA_SWITCHED.format(name="pirata")
+    assert client.requests[0][1][0] == {
+        "role": "system",
+        "content": messages.PERSONAS["pirata"],
+    }
+    assert client.requests[1][1][0] == {
+        "role": "system",
+        "content": messages.PERSONAS["poeta"],
+    }
+    assert client.requests[1][1][1:] == [
+        {"role": "user", "content": "Ciao!"},
+        {"role": "assistant", "content": "Ok"},
+        {"role": "user", "content": "E ora?"},
+    ]
+
+
+async def test_without_a_persona_no_system_prompt_is_sent() -> None:
+    client = FakeModelClient(["Ok"])
+    await collect(Chat(client, model="m").send("Ciao!"))
+
+    assert client.requests[0][1] == [{"role": "user", "content": "Ciao!"}]
+
+
+@pytest.mark.parametrize("name", ["", "sconosciuta"])
+def test_missing_or_unknown_persona_lists_the_available_ones(name: str) -> None:
+    chat = Chat(FakeModelClient(), model="m")
+
+    with pytest.raises(ChatError) as raised:
+        chat.use_persona(name)
+
+    for persona in messages.PERSONAS:
+        assert persona in str(raised.value)

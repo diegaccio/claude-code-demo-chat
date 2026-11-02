@@ -32,6 +32,20 @@ class Chat:
         self._client = client
         self._model = model
         self._messages: list[Message] = []
+        self._persona: str | None = None
+
+    def use_persona(self, name: str) -> str:
+        """Switch the system prompt to the named Persona; return the confirmation.
+
+        An empty or unknown name raises ChatError listing the available ones.
+        """
+        names = ", ".join(messages.PERSONAS)
+        if not name:
+            raise ChatError(messages.PERSONA_USAGE.format(names=names))
+        if name not in messages.PERSONAS:
+            raise ChatError(messages.PERSONA_UNKNOWN.format(names=names))
+        self._persona = name
+        return messages.PERSONA_SWITCHED.format(name=name)
 
     async def send(self, text: str) -> AsyncIterator[str]:
         """Stream the model's answer to the user's text, chunk by chunk.
@@ -41,9 +55,14 @@ class Chat:
         """
         question: Message = {"role": "user", "content": text}
         answer: list[str] = []
+        system: list[Message] = (
+            [{"role": "system", "content": messages.PERSONAS[self._persona]}]
+            if self._persona
+            else []
+        )
         try:
             async for chunk in self._client.stream(
-                model=self._model, messages=[*self._messages, question]
+                model=self._model, messages=[*system, *self._messages, question]
             ):
                 answer.append(chunk)
                 yield chunk
