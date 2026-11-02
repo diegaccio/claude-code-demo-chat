@@ -1,32 +1,14 @@
-from collections.abc import AsyncIterator, Sequence
+"""The chat seam, with a fake model client in place of the model server."""
+
+from collections.abc import AsyncIterator
 
 import httpx2
 import openai
 import pytest
 
 from demo_app import messages
-from demo_app.chat import Chat, ChatError, Message
-
-
-class FakeModelClient:
-    """Stands in for the OpenAI-compatible model server."""
-
-    def __init__(
-        self, chunks: Sequence[str] = (), *, error: Exception | None = None
-    ) -> None:
-        self.chunks = list(chunks)
-        self.error = error
-        self.requests: list[tuple[str, list[Message]]] = []
-
-    async def stream(
-        self, *, model: str, messages: Sequence[Message]
-    ) -> AsyncIterator[str]:
-        self.requests.append((model, list(messages)))
-        for chunk in self.chunks:
-            yield chunk
-        if self.error is not None:
-            raise self.error
-
+from demo_app.chat import Chat, ChatError
+from tests.fakes import FakeModelClient
 
 REQUEST = httpx2.Request("POST", "http://localhost:11434/v1/chat/completions")
 

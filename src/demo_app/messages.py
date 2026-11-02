@@ -1,5 +1,8 @@
 """Every user-visible text of the Demo app, in Italian."""
 
+PROFILE_NAMES = {"local": "locale"}
+STATUS_PROFILE = "Profilo: {profile} · {model}"
+
 MODEL_UNREACHABLE = (
     "Impossibile raggiungere il server del modello. "
     "Controlla che sia avviato e riprova."
