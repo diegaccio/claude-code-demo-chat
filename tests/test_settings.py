@@ -6,9 +6,7 @@ from demo_app.settings import ModelProfile, Settings
 
 
 @pytest.fixture(autouse=True)
-def no_settings_in_environment(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def no_settings_in_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)  # no .env file here
     for name in ("MODEL_PROFILE", "LOCAL_BASE_URL", "LOCAL_MODEL"):
         monkeypatch.delenv(name, raising=False)

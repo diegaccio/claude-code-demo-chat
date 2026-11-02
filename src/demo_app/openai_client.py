@@ -30,7 +30,9 @@ class OpenAIModelClient:
         self, *, model: str, messages: Sequence[Message]
     ) -> AsyncIterator[str]:
         response = await self._client.chat.completions.create(
-            model=model, messages=[_to_openai(message) for message in messages], stream=True
+            model=model,
+            messages=[_to_openai(message) for message in messages],
+            stream=True,
         )
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:

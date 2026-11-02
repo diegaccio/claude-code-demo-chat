@@ -8,9 +8,7 @@ import pytest
 
 from demo_app import messages
 from demo_app.chat import Chat, ChatError
-from tests.fakes import FakeModelClient
-
-REQUEST = httpx2.Request("POST", "http://localhost:11434/v1/chat/completions")
+from tests.fakes import REQUEST, FakeModelClient
 
 
 async def collect(stream: AsyncIterator[str]) -> list[str]:

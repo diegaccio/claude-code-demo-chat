@@ -1,5 +1,10 @@
 """Every user-visible text of the Demo app, in Italian."""
 
+APP_TITLE = "Demo app"
+WORDMARK = "Base Digitale"
+PROMPT_PLACEHOLDER = "Scrivi un messaggio e premi Invio"
+USER_TURN = "Tu: {text}"
+
 PROFILE_NAMES = {"local": "locale"}
 STATUS_PROFILE = "Profilo: {profile} · {model}"
 

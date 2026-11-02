@@ -2,7 +2,12 @@
 
 from collections.abc import AsyncIterator, Sequence
 
+import httpx2
+
 from demo_app.chat import Message
+
+# The request a model client error refers to.
+REQUEST = httpx2.Request("POST", "http://localhost:11434/v1/chat/completions")
 
 
 class FakeModelClient:

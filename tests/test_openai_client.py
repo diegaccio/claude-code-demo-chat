@@ -17,10 +17,15 @@ PROFILE = ModelProfile(
 
 def sse(*contents: str) -> bytes:
     events = [
-        {"id": "1", "object": "chat.completion.chunk", "created": 0,
-         "model": PROFILE.model,
-         "choices": [{"index": 0, "delta": {"content": content},
-                      "finish_reason": None}]}
+        {
+            "id": "1",
+            "object": "chat.completion.chunk",
+            "created": 0,
+            "model": PROFILE.model,
+            "choices": [
+                {"index": 0, "delta": {"content": content}, "finish_reason": None}
+            ],
+        }
         for content in contents
     ]
     lines = [f"data: {json.dumps(event)}\n\n" for event in events]
@@ -28,7 +33,9 @@ def sse(*contents: str) -> bytes:
 
 
 def chat_against(handler: httpx2.MockTransport) -> Chat:
-    client = OpenAIModelClient(PROFILE, http_client=httpx2.AsyncClient(transport=handler))
+    client = OpenAIModelClient(
+        PROFILE, http_client=httpx2.AsyncClient(transport=handler)
+    )
     return Chat(client, model=PROFILE.model)
 
 
