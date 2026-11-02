@@ -6,14 +6,14 @@ The Validation steps of this project: the commands that decide whether a change 
 
 Run from the repository root, in this order, stopping at the first that fails. A change is green when every step exits 0. A step marked `none` is skipped.
 
-The stack is not chosen yet, so no step has tooling. Re-run `bdg:validation-setup` once it is: until then validation is missing and code Tasks are refused.
+None of the steps needs a model server: they pass with neither Ollama nor SRH reachable.
 
 | Step | Command | What it does |
 | ---- | ------- | ------------ |
-| prepare | not configured | |
-| build | not configured | |
-| lint | not configured | |
-| test | not configured | |
+| prepare | `uv sync --locked` | Installs the locked dependencies, dev tools included, into `.venv`; fails if `uv.lock` is out of date with `pyproject.toml`. Safe to repeat. |
+| build | `uv run pyright` | Type-checks `src` and `tests` in pyright's `standard` mode (Python has no compile step). |
+| lint | `uv run ruff check` | Lints with ruff's default rules plus import sorting. |
+| test | `uv run pytest` | Runs the tests in `tests/`, async tests included. |
 
 - **Base ref:** not used
 
@@ -21,4 +21,4 @@ The stack is not chosen yet, so no step has tooling. Re-run `bdg:validation-setu
 
 - **Status:** unverified
 - **Verified at:** none
-- **Last run:** none: no steps defined (2026-11-02)
+- **Last run:** 2026-11-02, working tree only: prepare, build, lint and test all passed
