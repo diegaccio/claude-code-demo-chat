@@ -3,6 +3,7 @@
 import json
 import re
 from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Protocol, TypedDict, cast
 
@@ -18,8 +19,18 @@ _ROLES = ("system", "user", "assistant")
 
 
 class Message(TypedDict):
+    """One message of the conversation, as sent to the model."""
+
     role: Role
     content: str
+
+
+@dataclass(frozen=True)
+class Turn:
+    """A question and the answer it got, as the UI shows them."""
+
+    question: str
+    answer: str
 
 
 class ModelClient(Protocol):
@@ -27,7 +38,9 @@ class ModelClient(Protocol):
 
     def stream(
         self, *, model: str, messages: Sequence[Message]
-    ) -> AsyncIterator[str]: ...
+    ) -> AsyncIterator[str]:
+        """Yield the reply to `messages` as non-empty text chunks, in order."""
+        ...
 
 
 class ChatError(Exception):
@@ -98,8 +111,8 @@ class Chat:
             json.dumps(self._messages, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
-    def load(self, name: str) -> list[Message]:
-        """Replace the conversation with the saved one, and return its messages.
+    def load(self, name: str) -> list[Turn]:
+        """Replace the conversation with the saved one, and return its turns.
 
         A missing or corrupt file raises ChatError and leaves the conversation
         as it was.
@@ -115,12 +128,29 @@ class Chat:
         if loaded is None:
             raise ChatError(messages.CONVERSATION_CORRUPT.format(name=name))
         self._messages = loaded
-        return list(loaded)
+        return _turns(loaded)
 
     def _path(self, name: str) -> Path:
         if not _NAME.fullmatch(name):
             raise ChatError(messages.CONVERSATION_NAME_INVALID)
         return self._conversations / f"{name}.json"
+
+
+def _turns(history: list[Message]) -> list[Turn]:
+    """The question and answer pairs of a history; a system prompt is no turn."""
+    turns: list[Turn] = []
+    question: str | None = None
+    for message in history:
+        if message["role"] == "user":
+            if question is not None:
+                turns.append(Turn(question, ""))
+            question = message["content"]
+        elif message["role"] == "assistant" and question is not None:
+            turns.append(Turn(question, message["content"]))
+            question = None
+    if question is not None:
+        turns.append(Turn(question, ""))
+    return turns
 
 
 def _parse(data: object) -> list[Message] | None:

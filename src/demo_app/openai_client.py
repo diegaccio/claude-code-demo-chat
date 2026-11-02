@@ -35,6 +35,7 @@ class OpenAIModelClient:
     async def stream(
         self, *, model: str, messages: Sequence[Message]
     ) -> AsyncIterator[str]:
+        """Yield the non-empty text deltas of the server's streamed answer."""
         response = await self._client.chat.completions.create(
             model=model,
             messages=[_to_openai(message) for message in messages],
@@ -52,6 +53,7 @@ class UnconfiguredModelClient:
     async def stream(
         self, *, model: str, messages: Sequence[Message]
     ) -> AsyncIterator[str]:
+        """Fail the turn with a ChatError saying the server URL is missing."""
         raise ChatError(SRH_URL_MISSING)
         yield  # unreachable: makes this an async generator
 

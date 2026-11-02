@@ -15,13 +15,22 @@ PROFILE = ModelProfile(
 )
 
 
-def sse(*contents: str) -> bytes:
+THINKING_OFF: dict[str, object] = {"chat_template_kwargs": {"enable_thinking": False}}
+SRH_PROFILE = ModelProfile(
+    name="srh",
+    base_url="http://srh.example.test/v1",
+    model="qwen3.6-35b-a3b",
+    extra_body=THINKING_OFF,
+)
+
+
+def sse(*contents: str, model: str = PROFILE.model) -> bytes:
     events = [
         {
             "id": "1",
             "object": "chat.completion.chunk",
             "created": 0,
-            "model": PROFILE.model,
+            "model": model,
             "choices": [
                 {"index": 0, "delta": {"content": content}, "finish_reason": None}
             ],
@@ -32,9 +41,25 @@ def sse(*contents: str) -> bytes:
     return ("".join(lines) + "data: [DONE]\n\n").encode()
 
 
-def chat_against(handler: httpx2.MockTransport) -> Chat:
-    client = client_for(PROFILE, http_client=httpx2.AsyncClient(transport=handler))
-    return Chat(client, model=PROFILE.model)
+def chat_against(
+    handler: httpx2.MockTransport, profile: ModelProfile = PROFILE
+) -> Chat:
+    client = client_for(profile, http_client=httpx2.AsyncClient(transport=handler))
+    return Chat(client, model=profile.model)
+
+
+def recording_server(
+    profile: ModelProfile, requests: list[dict[str, object]]
+) -> httpx2.MockTransport:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(json.loads(request.content))
+        return httpx2.Response(
+            200,
+            content=sse("Ok", model=profile.model),
+            headers={"content-type": "text/event-stream"},
+        )
+
+    return httpx2.MockTransport(handler)
 
 
 async def test_answer_streams_from_the_server() -> None:
@@ -82,3 +107,33 @@ async def test_unreachable_server_is_reported() -> None:
         _ = [chunk async for chunk in chat.send("Ciao")]
 
     assert str(raised.value) == messages.MODEL_UNREACHABLE
+
+
+async def test_srh_requests_carry_the_profile_extra_options() -> None:
+    requests: list[dict[str, object]] = []
+    chat = chat_against(recording_server(SRH_PROFILE, requests), SRH_PROFILE)
+
+    chunks = [chunk async for chunk in chat.send("Ciao")]
+
+    assert chunks == ["Ok"]
+    assert requests[0]["model"] == "qwen3.6-35b-a3b"
+    assert requests[0]["chat_template_kwargs"] == {"enable_thinking": False}
+
+
+async def test_local_requests_carry_no_extra_options() -> None:
+    requests: list[dict[str, object]] = []
+    chat = chat_against(recording_server(PROFILE, requests))
+
+    _ = [chunk async for chunk in chat.send("Ciao")]
+
+    assert "chat_template_kwargs" not in requests[0]
+
+
+async def test_srh_profile_without_a_url_reports_it_readably() -> None:
+    profile = ModelProfile(name="srh", base_url=None, model="qwen3.6-35b-a3b")
+    chat = Chat(client_for(profile), model=profile.model)
+
+    with pytest.raises(ChatError) as raised:
+        _ = [chunk async for chunk in chat.send("Ciao")]
+
+    assert str(raised.value) == messages.SRH_URL_MISSING
