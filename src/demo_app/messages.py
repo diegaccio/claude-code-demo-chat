@@ -27,3 +27,16 @@ PERSONAS = {
 PERSONA_SWITCHED = "Persona attiva: {name}."
 PERSONA_UNKNOWN = "Persona non trovata. Persone disponibili: {names}."
 PERSONA_USAGE = "Uso: /persona <nome>. Persone disponibili: {names}."
+CONVERSATION_SAVED = "Conversazione salvata come «{name}»."
+CONVERSATION_LOADED = "Conversazione «{name}» caricata. Puoi continuare da qui."
+CONVERSATION_MISSING = (
+    "Non esiste nessuna conversazione salvata chiamata «{name}». "
+    "Controlla il nome e riprova."
+)
+CONVERSATION_CORRUPT = (
+    "Non riesco a leggere la conversazione «{name}»: il file è danneggiato."
+)
+CONVERSATION_NAME_INVALID = (
+    "Il nome può contenere solo lettere, numeri, trattini e trattini bassi."
+)
+CONVERSATION_NAME_USAGE = "Indica un nome: /save <nome> oppure /load <nome>."

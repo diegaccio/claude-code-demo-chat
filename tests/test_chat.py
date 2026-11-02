@@ -1,6 +1,8 @@
 """The chat seam, with a fake model client in place of the model server."""
 
+import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import httpx2
 import openai
@@ -133,3 +135,67 @@ def test_missing_or_unknown_persona_lists_the_available_ones(name: str) -> None:
 
     for persona in messages.PERSONAS:
         assert persona in str(raised.value)
+
+
+async def test_saved_conversation_loads_back_and_the_chat_continues(
+    tmp_path: Path,
+) -> None:
+    client = FakeModelClient(["Bene."])
+    chat = Chat(client, model="ministral-3:3b", conversations=tmp_path)
+    await collect(chat.send("Come stai?"))
+    chat.save("lunedi")
+
+    assert json.loads((tmp_path / "lunedi.json").read_text("utf-8")) == [
+        {"role": "user", "content": "Come stai?"},
+        {"role": "assistant", "content": "Bene."},
+    ]
+
+    other = Chat(client, model="ministral-3:3b", conversations=tmp_path)
+    assert other.load("lunedi") == [
+        {"role": "user", "content": "Come stai?"},
+        {"role": "assistant", "content": "Bene."},
+    ]
+    await collect(other.send("E ora?"))
+
+    assert client.requests[-1][1] == [
+        {"role": "user", "content": "Come stai?"},
+        {"role": "assistant", "content": "Bene."},
+        {"role": "user", "content": "E ora?"},
+    ]
+
+
+def test_loading_a_missing_conversation_raises_a_readable_error(
+    tmp_path: Path,
+) -> None:
+    chat = Chat(FakeModelClient(), model="m", conversations=tmp_path)
+
+    with pytest.raises(ChatError) as raised:
+        chat.load("assente")
+
+    assert str(raised.value) == messages.CONVERSATION_MISSING.format(name="assente")
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["not json {", '{"role": "user"}', '[{"role": "boss", "content": "x"}]', "[1]"],
+)
+def test_loading_a_corrupt_conversation_raises_a_readable_error_and_keeps_the_chat(
+    tmp_path: Path, content: str
+) -> None:
+    (tmp_path / "rotta.json").write_text(content, encoding="utf-8")
+    chat = Chat(FakeModelClient(), model="m", conversations=tmp_path)
+
+    with pytest.raises(ChatError) as raised:
+        chat.load("rotta")
+
+    assert str(raised.value) == messages.CONVERSATION_CORRUPT.format(name="rotta")
+
+
+def test_a_name_that_could_leave_the_folder_is_refused(tmp_path: Path) -> None:
+    chat = Chat(FakeModelClient(), model="m", conversations=tmp_path)
+
+    with pytest.raises(ChatError) as raised:
+        chat.save("../fuori")
+
+    assert str(raised.value) == messages.CONVERSATION_NAME_INVALID
+    assert not (tmp_path.parent / "fuori.json").exists()
