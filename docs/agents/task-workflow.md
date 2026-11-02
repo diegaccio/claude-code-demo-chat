@@ -46,6 +46,7 @@ Used by `bdg:pathfinder` to steer work too big for one session: one map Issue an
 | awaiting-info | untriaged | The reporter answered. |
 | untriaged | agent-ready or human-ready | Triage has fully specified it. |
 | untriaged or awaiting-info | declined | It will not be done: comment the reason, then close. |
+| agent-ready | human-ready | An unattended run (`.sandcastle/`) could not finish it: the runner comments both agents' reports first. |
 | agent-ready or human-ready | closed | Its change is merged into the target branch: comment what was done, then close. |
 
 **Closing:** a Task is closed by the skill that finished it, after its change is merged; merging a pull request does not close it by itself. A Blueprint stays open until the team closes it.

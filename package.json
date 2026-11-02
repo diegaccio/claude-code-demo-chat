@@ -1,0 +1,17 @@
+{
+  "name": "demo-app-sandcastle",
+  "private": true,
+  "type": "module",
+  "description": "Node tooling for the Sandcastle AFK runner; the app itself is Python",
+  "scripts": {
+    "sandcastle": "tsx .sandcastle/main.mts",
+    "sandcastle:build-image": "sandcastle docker build-image",
+    "sandcastle:typecheck": "tsc --noEmit -p .sandcastle"
+  },
+  "devDependencies": {
+    "@ai-hero/sandcastle": "0.12.0",
+    "@types/node": "24.19.2",
+    "tsx": "4.23.14",
+    "typescript": "5.9.3"
+  }
+}
