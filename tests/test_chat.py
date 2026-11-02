@@ -32,3 +32,17 @@ async def test_answer_streams_in_chunks_from_the_model() -> None:
     assert client.requests == [
         ("ministral-3:3b", [{"role": "user", "content": "Ciao!"}])
     ]
+
+
+async def test_next_turn_sends_the_whole_conversation_so_far() -> None:
+    client = FakeModelClient(["Bene", ", grazie."])
+    chat = Chat(client, model="ministral-3:3b")
+    await collect(chat.send("Come stai?"))
+
+    await collect(chat.send("E tu?"))
+
+    assert client.requests[-1][1] == [
+        {"role": "user", "content": "Come stai?"},
+        {"role": "assistant", "content": "Bene, grazie."},
+        {"role": "user", "content": "E tu?"},
+    ]

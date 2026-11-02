@@ -28,7 +28,10 @@ class Chat:
     async def send(self, text: str) -> AsyncIterator[str]:
         """Add the user's text and stream the model's answer, chunk by chunk."""
         self._messages.append({"role": "user", "content": text})
+        answer: list[str] = []
         async for chunk in self._client.stream(
             model=self._model, messages=list(self._messages)
         ):
+            answer.append(chunk)
             yield chunk
+        self._messages.append({"role": "assistant", "content": "".join(answer)})
