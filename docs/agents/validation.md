@@ -19,6 +19,6 @@ None of the steps needs a model server: they pass with neither Ollama nor SRH re
 
 ## Verification
 
-- **Status:** unverified
-- **Verified at:** none
-- **Last run:** 2026-11-02, working tree only: prepare, build, lint and test all passed
+- **Status:** verified
+- **Verified at:** `eb4f317687cf89b0b2808e96eb9ae4666755a42f`
+- **Last run:** 2026-11-02, clean checkout: prepare passed, build passed (0 errors), lint passed, test passed (1 test)
