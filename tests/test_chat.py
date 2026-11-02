@@ -84,3 +84,29 @@ async def test_missing_model_raises_a_readable_error_naming_the_model() -> None:
 
     assert str(raised.value) == messages.MODEL_MISSING.format(model="ministral-3:3b")
     assert "ministral-3:3b" in str(raised.value)
+
+
+async def test_after_a_failed_turn_the_chat_goes_on_without_it() -> None:
+    client = FakeModelClient(error=openai.APIConnectionError(request=REQUEST))
+    chat = Chat(client, model="ministral-3:3b")
+    with pytest.raises(ChatError):
+        await collect(chat.send("Ci sei?"))
+
+    client.error = None
+    client.chunks = ["Eccomi."]
+    chunks = await collect(chat.send("Ci sei ora?"))
+
+    assert chunks == ["Eccomi."]
+    assert client.requests[-1][1] == [{"role": "user", "content": "Ci sei ora?"}]
+
+
+async def test_any_other_server_error_raises_a_readable_error() -> None:
+    server_error = openai.InternalServerError(
+        "boom", response=httpx2.Response(500, request=REQUEST), body=None
+    )
+    chat = Chat(FakeModelClient(error=server_error), model="ministral-3:3b")
+
+    with pytest.raises(ChatError) as raised:
+        await collect(chat.send("Ciao!"))
+
+    assert str(raised.value) == messages.MODEL_ERROR

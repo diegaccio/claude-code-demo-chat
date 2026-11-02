@@ -34,12 +34,16 @@ class Chat:
         self._messages: list[Message] = []
 
     async def send(self, text: str) -> AsyncIterator[str]:
-        """Add the user's text and stream the model's answer, chunk by chunk."""
-        self._messages.append({"role": "user", "content": text})
+        """Stream the model's answer to the user's text, chunk by chunk.
+
+        The turn joins the conversation only once the answer is complete: a
+        failed turn raises ChatError and leaves the conversation as it was.
+        """
+        question: Message = {"role": "user", "content": text}
         answer: list[str] = []
         try:
             async for chunk in self._client.stream(
-                model=self._model, messages=list(self._messages)
+                model=self._model, messages=[*self._messages, question]
             ):
                 answer.append(chunk)
                 yield chunk
@@ -47,4 +51,6 @@ class Chat:
             raise ChatError(messages.MODEL_UNREACHABLE) from error
         except openai.NotFoundError as error:
             raise ChatError(messages.MODEL_MISSING.format(model=self._model)) from error
-        self._messages.append({"role": "assistant", "content": "".join(answer)})
+        except openai.APIError as error:
+            raise ChatError(messages.MODEL_ERROR) from error
+        self._messages += [question, {"role": "assistant", "content": "".join(answer)}]
