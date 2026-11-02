@@ -20,5 +20,6 @@ None of the steps needs a model server: they pass with neither Ollama nor SRH re
 ## Verification
 
 - **Status:** verified
-- **Verified at:** `eb4f317687cf89b0b2808e96eb9ae4666755a42f`
-- **Last run:** 2026-11-02, clean checkout: prepare passed, build passed (0 errors), lint passed, test passed (1 test)
+- **Verified at:** `e1aab1a6c052e747378d252667d4132c74b61853`
+- **Last run:** 2026-11-02, clean checkout: prepare passed, build passed (0 errors), lint passed, test passed (41 tests)
+- **CI:** `.github/workflows/validation.yml` runs the same steps, in the same order, on every push.
