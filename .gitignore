@@ -12,3 +12,9 @@ __pycache__/
 
 # Saved conversations
 conversations/
+
+# Sandcastle AFK runner (.sandcastle/)
+node_modules/
+.sandcastle/.env
+.sandcastle/logs/
+.sandcastle/worktrees/
