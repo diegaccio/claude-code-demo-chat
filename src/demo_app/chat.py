@@ -3,6 +3,10 @@
 from collections.abc import AsyncIterator, Sequence
 from typing import Literal, Protocol, TypedDict
 
+import openai
+
+from demo_app import messages
+
 
 class Message(TypedDict):
     role: Literal["system", "user", "assistant"]
@@ -17,6 +21,10 @@ class ModelClient(Protocol):
     ) -> AsyncIterator[str]: ...
 
 
+class ChatError(Exception):
+    """A failed turn; its text is ready to show the user."""
+
+
 class Chat:
     """A conversation with one model, through a model client."""
 
@@ -29,9 +37,12 @@ class Chat:
         """Add the user's text and stream the model's answer, chunk by chunk."""
         self._messages.append({"role": "user", "content": text})
         answer: list[str] = []
-        async for chunk in self._client.stream(
-            model=self._model, messages=list(self._messages)
-        ):
-            answer.append(chunk)
-            yield chunk
+        try:
+            async for chunk in self._client.stream(
+                model=self._model, messages=list(self._messages)
+            ):
+                answer.append(chunk)
+                yield chunk
+        except openai.APIConnectionError as error:
+            raise ChatError(messages.MODEL_UNREACHABLE) from error
         self._messages.append({"role": "assistant", "content": "".join(answer)})
