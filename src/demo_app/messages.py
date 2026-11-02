@@ -5,7 +5,7 @@ WORDMARK = "Base Digitale"
 PROMPT_PLACEHOLDER = "Scrivi un messaggio e premi Invio"
 USER_TURN = "Tu: {text}"
 
-PROFILE_NAMES = {"local": "locale"}
+PROFILE_NAMES = {"local": "locale", "srh": "SRH"}
 STATUS_PROFILE = "Profilo: {profile} · {model}"
 
 MODEL_UNREACHABLE = (
@@ -40,3 +40,7 @@ CONVERSATION_NAME_INVALID = (
     "Il nome può contenere solo lettere, numeri, trattini e trattini bassi."
 )
 CONVERSATION_NAME_USAGE = "Indica un nome: /save <nome> oppure /load <nome>."
+SRH_URL_MISSING = (
+    "L'indirizzo del server SRH non è configurato. "
+    "Impostalo nel file .env (SRH_BASE_URL) e riavvia l'app."
+)

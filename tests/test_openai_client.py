@@ -7,7 +7,7 @@ import pytest
 
 from demo_app import messages
 from demo_app.chat import Chat, ChatError
-from demo_app.openai_client import OpenAIModelClient
+from demo_app.openai_client import client_for
 from demo_app.settings import ModelProfile
 
 PROFILE = ModelProfile(
@@ -33,9 +33,7 @@ def sse(*contents: str) -> bytes:
 
 
 def chat_against(handler: httpx2.MockTransport) -> Chat:
-    client = OpenAIModelClient(
-        PROFILE, http_client=httpx2.AsyncClient(transport=handler)
-    )
+    client = client_for(PROFILE, http_client=httpx2.AsyncClient(transport=handler))
     return Chat(client, model=PROFILE.model)
 
 
